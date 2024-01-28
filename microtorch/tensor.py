@@ -23,9 +23,8 @@ class Tensor:
                 self.grad += out.grad
             if other.requires_grad:
                 # Broadcast out.grad to the shape of other.data before adding
-                print(other.grad.shape)
-                print(out.grad.shape)
-                other.grad += np.sum(out.grad, axis=1, keepdims=True)
+                other.grad += np.sum(out.grad, axis=0, keepdims=True)
+
         out._backward = _backward
 
         return out
