@@ -2,6 +2,13 @@
 
 Welcome. This project aims to create a high performance deep learning framework with CUDA support and a similar API as that of PyTorch. This is done for educational purposes and detailed instructions for each step follows.
 
+### Important commands
+
+```bash
+python3 setup.py install
+```
+
+
 ### Installation
 
 ```bash
