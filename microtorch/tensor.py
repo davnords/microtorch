@@ -20,9 +20,12 @@ class Tensor:
 
         def _backward():
             if self.requires_grad:
-                self.grad += np.mean(out.grad, axis=0, keepdims=True) # maybe wrong with mean here lol
+                self.grad += out.grad
             if other.requires_grad:
-                other.grad += np.mean(out.grad, axis=0, keepdims=True)
+                # Broadcast out.grad to the shape of other.data before adding
+                print(other.grad.shape)
+                print(out.grad.shape)
+                other.grad += np.sum(out.grad, axis=1, keepdims=True)
         out._backward = _backward
 
         return out
@@ -30,11 +33,17 @@ class Tensor:
     def __mul__(self, other):
         if isinstance(other, int):
             other = float(other)
-        assert isinstance(other, float)
-        out = Tensor(self.data * other, (self,), '*')
+        # assert isinstance(other, float)
+        if isinstance(other, Tensor):
+            out_data = self.data * other.data
+        else: 
+            out_data = self.data * other
+        out = Tensor(out_data, (self, other), '*')
 
         def _backward():
-            self.grad += other * out.grad   
+            self.grad += other * out.grad
+            if isinstance(other, Tensor):
+                other.grad += np.sum(self.data * out.grad)
         out._backward = _backward
 
         return out
@@ -45,9 +54,9 @@ class Tensor:
 
         def _backward():
             if self.requires_grad:
-                self.grad += out.grad @ other.data.T  # Chain rule for matrix multiplication
+                self.grad += out.grad.dot(other.data.T)
             if other.requires_grad:
-                other.grad += self.data.T @ out.grad  # Chain rule for matrix multiplication
+                other.grad += self.data.T.dot(out.grad)
         out._backward = _backward
         
         return out
@@ -57,18 +66,27 @@ class Tensor:
         out = Tensor(self.data**other, (self,), f'**{other}')
 
         def _backward():
-            self.grad += (other * self.data**(other-1)) * out.grad
+            self.grad += other * np.power(self.data, other - 1) * out.grad
         out._backward = _backward
 
         return out
 
     def mean(self):
-        m = self.data.shape[0]
-        out_data = np.mean(self.data, axis=0, keepdims=True)
+        out_data = np.mean(self.data, keepdims=True)
         out = Tensor(out_data, (self,), 'Mean')
 
         def _backward():
-            self.grad += out.grad / m
+            self.grad += out.grad*(1 / self.data.size)
+        out._backward = _backward
+
+        return out
+    
+    def sum(self):
+        out_data = np.sum(self.data, keepdims=True)
+        out = Tensor(out_data, (self,), 'Mean')
+
+        def _backward():
+            self.grad += out.grad
         out._backward = _backward
 
         return out
@@ -91,9 +109,6 @@ class Tensor:
         def _backward():
             # Compute the derivative of softmax with respect to the input
             softmax_grad = out_data * (1 - out_data)
-
-            print(out.grad.shape)
-            print(softmax_grad.shape)
             # Update the gradients using the chain rule
             self.grad += np.dot(out.grad, softmax_grad)
         out._backward = _backward
@@ -122,7 +137,8 @@ class Tensor:
             v._backward()
 
     def __neg__(self): # -self
-        return self * -1
+        self.data *= -1
+        return self
 
     def __radd__(self, other): # other + self
         return self + other
@@ -143,5 +159,6 @@ class Tensor:
         return other * self**-1
 
     def __repr__(self):
-        return str(self.data)
+        return f'tensor({self.data}, grad_fn=<{self._op}>)'
+
     
