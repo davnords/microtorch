@@ -100,9 +100,9 @@ class Tensor:
 
         return out
     
-    def softmax(self):
-        exp_data = np.exp(self.data - np.max(self.data, axis=-1, keepdims=True))
-        out_data = exp_data / np.sum(exp_data, axis=-1, keepdims=True)
+    def softmax(self, dim=1):
+        exp_data = np.exp(self.data - np.max(self.data, axis=dim, keepdims=True))
+        out_data = exp_data / np.sum(exp_data, axis=dim, keepdims=True)
         out = Tensor(out_data, (self,), 'Softmax')
 
         def _backward():
@@ -134,6 +134,9 @@ class Tensor:
         self.grad = np.ones(self.data.shape)
         for v in reversed(topo):
             v._backward()
+
+    def zero_grad_(self):
+        self.grad = np.zeros(self.data.shape)
 
     def __neg__(self): # -self
         self.data *= -1

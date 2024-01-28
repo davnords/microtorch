@@ -28,25 +28,24 @@ def main():
     B = torch.tensor(b, dtype=torch.float32, requires_grad=True)
     Y = torch.tensor(y, dtype=torch.float32, requires_grad=False)
     ypred = X @ W + B
+    ypred.softmax(dim=1)
     loss = (ypred-Y)**2
     loss = loss.mean()
     loss.backward()
     backward_torch = W.grad
-    print(W.grad)
 
     X = Tensor(x, requires_grad=True)
     W = Tensor(w, requires_grad=True)
     B = Tensor(b, requires_grad=True)
     Y = Tensor(y, requires_grad=False)
     ypred = X @ W + B
+    ypred.softmax(dim=1)
     loss = (ypred-Y)**2
     loss = loss.mean()
     loss.backward()
     backward_microtorch = W.grad
-    print(W.grad)
 
     backward_diff = (backward_torch - backward_microtorch).sum().data.item()
-
 
     tol = 1e-3
     if abs(forward_diff) < tol:

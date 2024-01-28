@@ -10,28 +10,44 @@ class Module:
     def parameters(self):
         return []
     
-class Layer(Module):
+class ReLU(Module):
+
+    def __init__(self):
+        super().__init__()
+
+    def __call__(self, x):
+        assert isinstance(x, Tensor)
+        return x.relu()
+
+    def __repr__(self):
+        return f"ReLU"
+    
+    def parameters(self):
+        return []
+    
+class Linear(Module):
 
     def __init__(self, nin, nout):
         self.nin = nin
+        self.nout = nout
         self.w = Tensor(np.random.randn(nin, nout))
         self.b = Tensor(np.random.randn(1, nout))
 
     def __call__(self, x):
         assert x.data.shape[-1] == self.nin
         z = x@self.w+self.b
-        return z.relu()
+        return z
 
     def parameters(self):
         return [self.w] + [self.b] 
 
     def __repr__(self):
-        return f"Layer of [{', '.join(str(n) for n in self.neurons)}]"
+        return f"Linear layer"
 
-class MLP(Module):
+class NeuralNetwork(Module):
 
-    def __init__(self, nin, nout, hidden_layers = 1, hidden_nodes=10):
-        self.layers = [Layer(nin, hidden_nodes)] + [Layer(hidden_nodes, hidden_nodes) for _ in range(hidden_layers)] + [Layer(hidden_nodes, nout)]
+    def __init__(self, nin, nout, hidden_nodes=10):
+        self.layers = [Linear(nin, hidden_nodes), ReLU()] + [Linear(hidden_nodes,nout), ReLU()]
 
     def __call__(self, x):
         for layer in self.layers:

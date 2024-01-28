@@ -1,13 +1,6 @@
 # microtorch
 
-Welcome. This project aims to create a high performance deep learning framework with CUDA support and a similar API as that of PyTorch. This is done for educational purposes and detailed instructions for each step follows.
-
-### Important commands
-
-```bash
-python3 setup.py install
-```
-
+Welcome. This project aims to create a high performance deep learning framework with CUDA support and a similar API as that of PyTorch. This is done for educational purposes and detailed instructions for each step follows. Currently the project has implemented a fully fletched autograd engine that runs through numpy. The next step is to write our own tensor class in C/C++ with CUDA support.
 
 ### Installation
 
@@ -20,52 +13,44 @@ pip install microtorch
 Below is a slightly contrived example showing a number of possible supported operations:
 
 ```python
-from micrograd.engine import Value
+from microtorch import Tensor
 
-a = Value(-4.0)
-b = Value(2.0)
-c = a + b
-d = a * b + b**3
-c += c + 1
-c += 1 + c + (-a)
-d += d * 2 + (b + a).relu()
-d += 3 * d + (b - a).relu()
-e = c - d
-f = e**2
-g = f / 2.0
-g += 10.0 / f
-print(f'{g.data:.4f}') # prints 24.7041, the outcome of this forward pass
-g.backward()
-print(f'{a.grad:.4f}') # prints 138.8338, i.e. the numerical value of dg/da
-print(f'{b.grad:.4f}') # prints 645.5773, i.e. the numerical value of dg/db
+X = Tensor(x, requires_grad=True)
+W = Tensor(w, requires_grad=True)
+B = Tensor(b, requires_grad=True)
+Y = Tensor(y, requires_grad=False)
+ypred = X @ W + B # single layer forward pass
+ypred.softmax(dim=1) # softmax as activation (ReLU is also supported)
+loss = (ypred-Y)**2
+loss = loss.mean()
+loss.backward()
+print(f'{W.grad:.4f}') # prints the full jacobian (gradiant) of the weight matrix
 ```
 
 ### Training a neural net
 
-The notebook `demo.ipynb` provides a full demo of training an 2-layer neural network (MLP) binary classifier. This is achieved by initializing a neural net from `micrograd.nn` module, implementing a simple svm "max-margin" binary classification loss and using SGD for optimization. As shown in the notebook, using a 2-layer neural net with two 16-node hidden layers we achieve the following decision boundary on the moon dataset:
-
-![2d neuron](moon_mlp.png)
-
-### Tracing / visualization
-
-For added convenience, the notebook `trace_graph.ipynb` produces graphviz visualizations. E.g. this one below is of a simple 2D neuron, arrived at by calling `draw_dot` on the code below, and it shows both the data (left number in each node) and the gradient (right number in each node).
-
-```python
-from micrograd import nn
-n = nn.Neuron(2)
-x = [Value(1.0), Value(-2.0)]
-y = n(x)
-dot = draw_dot(y)
-```
-
-![2d neuron](gout.svg)
+The engine supports training neural networks from scratch - as can be noted from the `test-engine.py` file, however, a more advanced example of full neural network training with benchmarking against PyTorch is in the making!
 
 ### Running tests
 
 To run the unit tests you will have to install [PyTorch](https://pytorch.org/), which the tests use as a reference for verifying the correctness of the calculated gradients. Then simply:
 
 ```bash
-python -m pytest
+python3 test-engine.py test-nn.py
+```
+
+When the autograd engine works (according to PyTorch) the following will be printed:
+```bash
+Forward: OK
+Backward: OK
+```
+
+Verifying that both the forward and backward passes agree with the PyTorch API.
+
+### C commands
+
+```bash
+python3 setup.py install
 ```
 
 ### License
